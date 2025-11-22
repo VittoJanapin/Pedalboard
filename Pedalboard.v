@@ -18,7 +18,18 @@ module Pedalboard (
 	AUD_DACDAT,
 
 	FPGA_I2C_SCLK,
-    LEDR
+    LEDR,
+
+	VGA_R,
+	VGA_G,
+	VGA_B,
+
+	VGA_HS,
+	VGA_VS,
+	VGA_BLANK_N,
+	VGA_SYNC_N,
+	VGA_CLK
+
 );
 
 /*****************************************************************************
@@ -44,11 +55,21 @@ inout				AUD_DACLRCK;
 
 inout				FPGA_I2C_SDAT;
 
-// Outputs
+// Outputs for audio
 output				AUD_XCK;
 output				AUD_DACDAT;
-
 output				FPGA_I2C_SCLK;
+
+//Outputs for video
+output				VGA_R;
+output				VGA_G;
+output				VGA_B;
+output				VGA_HS;
+output				VGA_VS;
+output				VGA_BLANK_N;
+output				VGA_SYNC_N;
+output				VGA_CLK;
+
 
 /*****************************************************************************
  *                 Internal Wires and Registers Declarations                 *
@@ -79,11 +100,10 @@ Audio Controller Interfacing
 assign read_audio_in			= audio_in_available; //will set a flag for the audio module to read audio in if theres available signals
 assign write_audio_out			= audio_in_available & audio_out_allowed & SW[0]; //set flag to allow outputting
 
-wire [2:0] amplification;
-assign amplification = SW[3:1];
 
-assign left_channel_audio_out	= left_channel_audio_in << amplification;
-assign right_channel_audio_out	= right_channel_audio_in << amplification;
+
+assign left_channel_audio_out	= left_channel_audio_in;
+assign right_channel_audio_out	= right_channel_audio_in;
 
 /*******************************************************************************
 
@@ -134,6 +154,63 @@ end
 
 assign LEDR[9:0] = amplitude;
 /*****************************************************************************
+ *                              VGA CONTROLLER                             *
+ *****************************************************************************/
+parameter RESOLUTION = "160x120"; // "640x480" "320x240" "160x120"
+parameter COLOR_DEPTH = 9; // 9 6 3
+
+ 
+/* wires for VGA */
+
+reg write;
+reg [8:0] x; //160 bam
+reg [7:0] y; //7 for height
+reg [8:0] color;
+
+defparam VGA.BACKGROUND_IMAGE = "./MIFs/background.mif";
+
+//there are only 4 things we can draw
+wire [3:0] enable;
+assign enable = SW[3:0];
+
+//next state logic
+reg [1:0] state, nextState;
+always @ (*)
+    begin
+        case(state)
+            0: nextState = 1;
+            1: nextState = 2'd2;
+            2: nextState = 2'd3;
+            3: nextState = 2'd0;
+        endcase
+    end
+
+always @ (posedge CLOCK_50)
+    begin
+        if(~KEY[0]) state <= 0;
+        else state <= nextState;
+    end
+
+
+//outputs
+always @ (posedge CLOCK_50) begin
+    case(state)
+        0: begin x <= 42; y <= 47; color <= enable[0] ? 3'h1C1 : 9'h100; write<=1; end
+        1: begin x <= 66; y <= 47; color <= enable[0] ? 3'h1C1 : 9'h100; write<=1; end
+        2: begin x <= 90; y <= 47; color <= enable[0] ? 3'h1C1 : 9'h100; write<=1; end
+        3: begin x <= 113; y <= 47; color <= enable[0] ? 3'h1C1 : 9'h100; write<=1; end
+    endcase
+end
+
+wire [3:0] selector;
+assign selector = SW[3:0];
+
+
+
+
+
+
+/*****************************************************************************
  *                              Internal Modules                             *
  *****************************************************************************/
 
@@ -176,4 +253,79 @@ avconf #(.USE_MIC_INPUT(0)) avc (
 	.CLOCK_50					(CLOCK_50),
 	.reset						(~KEY[0])
 );
+
+vga_adapter VGA (
+        .resetn(KEY[0]),
+        .clock(CLOCK_50),
+        .color(color),
+        .x(X),
+        .y(Y),
+        .write(write),
+        .VGA_R(VGA_R),
+        .VGA_G(VGA_G),
+        .VGA_B(VGA_B),
+        .VGA_HS(VGA_HS),
+        .VGA_VS(VGA_VS),
+        .VGA_BLANK_N(VGA_BLANK_N),
+        .VGA_SYNC_N(VGA_SYNC_N),
+        .VGA_CLK(VGA_CLK)
+);
+
+
+
+
 endmodule
+
+
+/*
+COLOR GUIDE
+1D9 - ORANGE PEDAL
+2F - BLUE
+1B6 - WHITE
+56 - PURPLE
+
+1C1 - red
+100 - MUTED RED
+*/
+
+
+/* VGA Adapter
+ * ----------------
+ *
+ * This is an implementation of a VGA Adapter. The adapter uses VGA mode signalling to initiate
+ * a 640x480 resolution mode on a computer monitor, with a refresh rate of approximately 60Hz.
+ *
+ * This implementation of the VGA adapter can display images of varying color depth at a 
+ * resolution of 640x480 pixels. You can also select a resolution of 320x240 or 160x120. For 
+ * these resolutions the adapter draws each "pixel" as a 2x2, or 4x4, block, respectively, on 
+ * the 640x480 display. 
+ *
+ * The number of bits of on-chip memory used by the adapter for the video memory is given by:
+ *
+ *     memory bits = COLS x ROWS x COLOR_DEPTH
+ *
+ *     Examples for DE1-SoC with COLOR_DEPTH = 3, 6, 9 (total colors = 8, 64, 512): 
+ *       640 x 480: x 3 = 921,600 bits, x 6 = 1,843,200 bit, x 9 = 2,764,800 bits
+ *       320 x 240: x 3 = 230,400 bits, x 6 = 460,800 bits,  x 9 = 691,200 bits 
+ *       160 x 120: x 3 = 57,600 bits,  x 6 = 115,200 bits,  x 9 = 172,800 bits
+ *
+ * The VGA resolution is set in the file resolution.v. The color-depth of the video memory is
+ * set by the parameter COLOR_DEPTH.
+ *
+ * The video memory can be loaded with an image from a memory initialization file (MIF) during
+ * FPGA programming. The MIF is specified by using the parameter BACKGROUND_IMAGE.
+ *
+ * To use this module connect the vga_adapter to your circuit. Your circuit should produce a 
+ * value for inputs color, x, y and write. When write is high, at the next positive edge of the 
+ * input clock the vga_adapter will change the contents of the video memory for the pixel at 
+ * location (x,y). At the next redraw * cycle the VGA controller will update the external video
+ * monitor. Since the monitor has no memory, the VGA controller copies the contents of the 
+ * video memory to the screen once every 60th of a second, which keeps the image stable.
+ *
+ * Make sure to include the required VGA signal pin assignments for the DE1-SoC board. Connect
+ * the clock input to 50 MHz CLOCK_50 pin.
+ *
+ * During compilation with Quartus Prime you may receive a number of warning messages related
+ * to a phase-locked loop (PLL), and a message about VGA_SYNC_N being stuck at Vcc. You can 
+ * safely ignore these warnings. 
+ */
