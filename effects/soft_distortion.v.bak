@@ -1,0 +1,311 @@
+module soft_distortion (
+    CLOCK_50,
+    enable,
+    left_channel_audio_in,
+    right_channel_audio_in,
+    left_channel_audio_out,
+    right_channel_audio_out,
+);
+
+/****************************************************************
+
+                        PORTS                                   
+    
+*****************************************************************/
+
+input CLOCK_50, enable;
+input [31:0] left_channel_audio_in, right_channel_audio_in;
+output reg [31:0] left_channel_audio_out, right_channel_audio_out;
+
+/****************************************************************
+
+                    COMBINATIONAL CIRCUITS                      
+    
+*****************************************************************/
+
+
+
+reg[7:0] LUT[0:255];
+initial begin
+ LUT[0] = 8'h00;
+    LUT[1] = 8'h03;
+    LUT[2] = 8'h07;
+    LUT[3] = 8'h0A;
+    LUT[4] = 8'h0D;
+    LUT[5] = 8'h11;
+    LUT[6] = 8'h14;
+    LUT[7] = 8'h17;
+    LUT[8] = 8'h1A;
+    LUT[9] = 8'h1D;
+    LUT[10] = 8'h20;
+    LUT[11] = 8'h23;
+    LUT[12] = 8'h26;
+    LUT[13] = 8'h29;
+    LUT[14] = 8'h2C;
+    LUT[15] = 8'h2E;
+    LUT[16] = 8'h31;
+    LUT[17] = 8'h33;
+    LUT[18] = 8'h36;
+    LUT[19] = 8'h38;
+    LUT[20] = 8'h3A;
+    LUT[21] = 8'h3C;
+    LUT[22] = 8'h3F;
+    LUT[23] = 8'h40;
+    LUT[24] = 8'h42;
+    LUT[25] = 8'h44;
+    LUT[26] = 8'h46;
+    LUT[27] = 8'h48;
+    LUT[28] = 8'h49;
+    LUT[29] = 8'h4B;
+    LUT[30] = 8'h4C;
+    LUT[31] = 8'h4E;
+    LUT[32] = 8'h4F;
+    LUT[33] = 8'h50;
+    LUT[34] = 8'h51;
+    LUT[35] = 8'h52;
+    LUT[36] = 8'h53;
+    LUT[37] = 8'h54;
+    LUT[38] = 8'h55;
+    LUT[39] = 8'h56;
+    LUT[40] = 8'h57;
+    LUT[41] = 8'h58;
+    LUT[42] = 8'h59;
+    LUT[43] = 8'h59;
+    LUT[44] = 8'h5A;
+    LUT[45] = 8'h5B;
+    LUT[46] = 8'h5B;
+    LUT[47] = 8'h5C;
+    LUT[48] = 8'h5C;
+    LUT[49] = 8'h5D;
+    LUT[50] = 8'h5D;
+    LUT[51] = 8'h5E;
+    LUT[52] = 8'h5E;
+    LUT[53] = 8'h5E;
+    LUT[54] = 8'h5F;
+    LUT[55] = 8'h5F;
+    LUT[56] = 8'h5F;
+    LUT[57] = 8'h60;
+    LUT[58] = 8'h60;
+    LUT[59] = 8'h60;
+    LUT[60] = 8'h60;
+    LUT[61] = 8'h61;
+    LUT[62] = 8'h61;
+    LUT[63] = 8'h61;
+    LUT[64] = 8'h61;
+    LUT[65] = 8'h61;
+    LUT[66] = 8'h62;
+    LUT[67] = 8'h62;
+    LUT[68] = 8'h62;
+    LUT[69] = 8'h62;
+    LUT[70] = 8'h62;
+    LUT[71] = 8'h62;
+    LUT[72] = 8'h62;
+    LUT[73] = 8'h62;
+    LUT[74] = 8'h63;
+    LUT[75] = 8'h63;
+    LUT[76] = 8'h63;
+    LUT[77] = 8'h63;
+    LUT[78] = 8'h63;
+    LUT[79] = 8'h63;
+    LUT[80] = 8'h63;
+    LUT[81] = 8'h63;
+    LUT[82] = 8'h63;
+    LUT[83] = 8'h63;
+    LUT[84] = 8'h63;
+    LUT[85] = 8'h63;
+    LUT[86] = 8'h63;
+    LUT[87] = 8'h63;
+    LUT[88] = 8'h63;
+    LUT[89] = 8'h63;
+    LUT[90] = 8'h64;
+    LUT[91] = 8'h64;
+    LUT[92] = 8'h64;
+    LUT[93] = 8'h64;
+    LUT[94] = 8'h64;
+    LUT[95] = 8'h64;
+    LUT[96] = 8'h64;
+    LUT[97] = 8'h64;
+    LUT[98] = 8'h64;
+    LUT[99] = 8'h64;
+    LUT[100] = 8'h64;
+    LUT[101] = 8'h64;
+    LUT[102] = 8'h64;
+    LUT[103] = 8'h64;
+    LUT[104] = 8'h64;
+    LUT[105] = 8'h64;
+    LUT[106] = 8'h64;
+    LUT[107] = 8'h64;
+    LUT[108] = 8'h64;
+    LUT[109] = 8'h64;
+    LUT[110] = 8'h64;
+    LUT[111] = 8'h64;
+    LUT[112] = 8'h64;
+    LUT[113] = 8'h64;
+    LUT[114] = 8'h64;
+    LUT[115] = 8'h64;
+    LUT[116] = 8'h64;
+    LUT[117] = 8'h64;
+    LUT[118] = 8'h64;
+    LUT[119] = 8'h64;
+    LUT[120] = 8'h64;
+    LUT[121] = 8'h64;
+    LUT[122] = 8'h64;
+    LUT[123] = 8'h64;
+    LUT[124] = 8'h64;
+    LUT[125] = 8'h64;
+    LUT[126] = 8'h64;
+    LUT[127] = 8'h64;
+    LUT[128] = 8'h64;
+    LUT[129] = 8'h64;
+    LUT[130] = 8'h64;
+    LUT[131] = 8'h64;
+    LUT[132] = 8'h64;
+    LUT[133] = 8'h64;
+    LUT[134] = 8'h64;
+    LUT[135] = 8'h64;
+    LUT[136] = 8'h64;
+    LUT[137] = 8'h64;
+    LUT[138] = 8'h64;
+    LUT[139] = 8'h64;
+    LUT[140] = 8'h64;
+    LUT[141] = 8'h64;
+    LUT[142] = 8'h64;
+    LUT[143] = 8'h64;
+    LUT[144] = 8'h64;
+    LUT[145] = 8'h64;
+    LUT[146] = 8'h64;
+    LUT[147] = 8'h64;
+    LUT[148] = 8'h64;
+    LUT[149] = 8'h64;
+    LUT[150] = 8'h64;
+    LUT[151] = 8'h64;
+    LUT[152] = 8'h64;
+    LUT[153] = 8'h64;
+    LUT[154] = 8'h64;
+    LUT[155] = 8'h64;
+    LUT[156] = 8'h64;
+    LUT[157] = 8'h64;
+    LUT[158] = 8'h64;
+    LUT[159] = 8'h64;
+    LUT[160] = 8'h64;
+    LUT[161] = 8'h64;
+    LUT[162] = 8'h64;
+    LUT[163] = 8'h64;
+    LUT[164] = 8'h64;
+    LUT[165] = 8'h64;
+    LUT[166] = 8'h64;
+    LUT[167] = 8'h64;
+    LUT[168] = 8'h64;
+    LUT[169] = 8'h64;
+    LUT[170] = 8'h64;
+    LUT[171] = 8'h64;
+    LUT[172] = 8'h64;
+    LUT[173] = 8'h64;
+    LUT[174] = 8'h64;
+    LUT[175] = 8'h64;
+    LUT[176] = 8'h64;
+    LUT[177] = 8'h64;
+    LUT[178] = 8'h64;
+    LUT[179] = 8'h64;
+    LUT[180] = 8'h64;
+    LUT[181] = 8'h64;
+    LUT[182] = 8'h64;
+    LUT[183] = 8'h64;
+    LUT[184] = 8'h64;
+    LUT[185] = 8'h64;
+    LUT[186] = 8'h64;
+    LUT[187] = 8'h64;
+    LUT[188] = 8'h64;
+    LUT[189] = 8'h64;
+    LUT[190] = 8'h64;
+    LUT[191] = 8'h64;
+    LUT[192] = 8'h64;
+    LUT[193] = 8'h64;
+    LUT[194] = 8'h64;
+    LUT[195] = 8'h64;
+    LUT[196] = 8'h64;
+    LUT[197] = 8'h64;
+    LUT[198] = 8'h64;
+    LUT[199] = 8'h64;
+    LUT[200] = 8'h64;
+    LUT[201] = 8'h64;
+    LUT[202] = 8'h64;
+    LUT[203] = 8'h64;
+    LUT[204] = 8'h64;
+    LUT[205] = 8'h64;
+    LUT[206] = 8'h64;
+    LUT[207] = 8'h64;
+    LUT[208] = 8'h64;
+    LUT[209] = 8'h64;
+    LUT[210] = 8'h64;
+    LUT[211] = 8'h64;
+    LUT[212] = 8'h64;
+    LUT[213] = 8'h64;
+    LUT[214] = 8'h64;
+    LUT[215] = 8'h64;
+    LUT[216] = 8'h64;
+    LUT[217] = 8'h64;
+    LUT[218] = 8'h64;
+    LUT[219] = 8'h64;
+    LUT[220] = 8'h64;
+    LUT[221] = 8'h64;
+    LUT[222] = 8'h64;
+    LUT[223] = 8'h64;
+    LUT[224] = 8'h64;
+    LUT[225] = 8'h64;
+    LUT[226] = 8'h64;
+    LUT[227] = 8'h64;
+    LUT[228] = 8'h64;
+    LUT[229] = 8'h64;
+    LUT[230] = 8'h64;
+    LUT[231] = 8'h64;
+    LUT[232] = 8'h64;
+    LUT[233] = 8'h64;
+    LUT[234] = 8'h64;
+    LUT[235] = 8'h64;
+    LUT[236] = 8'h64;
+    LUT[237] = 8'h64;
+    LUT[238] = 8'h64;
+    LUT[239] = 8'h64;
+    LUT[240] = 8'h64;
+    LUT[241] = 8'h64;
+    LUT[242] = 8'h64;
+    LUT[243] = 8'h64;
+    LUT[244] = 8'h64;
+    LUT[245] = 8'h64;
+    LUT[246] = 8'h64;
+    LUT[247] = 8'h64;
+    LUT[248] = 8'h64;
+    LUT[249] = 8'h64;
+    LUT[250] = 8'h64;
+    LUT[251] = 8'h64;
+    LUT[252] = 8'h64;
+    LUT[253] = 8'h64;
+    LUT[254] = 8'h64;
+    LUT[255] = 8'h64;
+end
+wire [7:0] left_LUT_index;
+assign left_LUT_index = left_channel_audio_in[30:23];
+wire [7:0] right_LUT_index;
+assign right_LUT_index = right_channel_audio_in[30:23];
+
+
+always @ (*) 
+    begin   
+        if(~enable) 
+        begin
+            left_channel_audio_out = left_channel_audio_in;
+            right_channel_audio_out = right_channel_audio_in;
+        end
+
+        else
+        begin
+            /***** APPLY DISTORTION LOGIC ******/
+            //evaluate the amplitude at different thresholds
+            //use lut for with the top 8 bits as index, 
+        
+            left_channel_audio_out = {left_channel_audio_in[31], LUT[left_LUT_index], 14'b0};
+            right_channel_audio_out = {right_channel_audio_in[31], LUT[right_LUT_index], 14'b0};
+        end
+    end
+endmodule
