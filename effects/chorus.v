@@ -13,125 +13,9 @@ PORTS
 **************************************/
 input CLOCK_50, enable, resetn, sample_clk;
 input [31:0] left_channel_audio_in, right_channel_audio_in;
-output [31:0] right_channel_audio_in, left_channel_audio_in;
+output [31:0] right_channel_audio_out, left_channel_audio_out;
 
-/**********************************************************************
-    specifications: 
-    10 ms, depth of 4 ms, lfo of 0.8hz, wet = 0.4
-
-    10ms delay = 480 samples (480 pointers behind)
-    4ms depth = 192 (this is how much it varies) 
-***********************************************************************/
-
-//circular buffer for 32 ms approx -> 32 bits * 32ms/48k
-reg [31:0] delay_buffer[0:2047]; //0.42 ms of samples //11 bit requirement
-reg [10:0] write_ptr;
-reg [10:0] read_ptr1, read_ptr2, read_ptr3; //+one voice
-
-/***********************************************************************************************
-Writing logic, the pointer iterates at 48k sync with aud then I will write to a certain address
-The address will loop back to 0, exactly like a circular buffer
-***********************************************************************************************/
-always @ (posedge sample_clk) begin
-    if(~resetn) begin
-        write_ptr <= 0;
-    end
-    else begin
-        delay_buffer[write_ptr] <= left_channel_audio_in; 
-        write_ptr <= (write_ptr+1) & 11'b11111111111; //pointer mask, basically always limited to the and of 1111111
-    end
-end
-/***********************************************************************************************
-Reading logic, will compare with the write ptr then subtract a certain index according to a 
-a low frequency oscillator like 
-***********************************************************************************************/
-
-/***********************************************************************************************
-LFO - LOW FREQUENCY OSCILLATOR WITH LUT FOR SIN
-***********************************************************************************************/
-parameter PHASE_STEP = 32'd74565;//calculated the right frequency
-reg [31:0] phase_acc1; //0 degree offest voice 1
-reg [31:0] phase_acc2; //120
-reg [31:0] phase_acc3; //240
-
-initial begin
-    phase_acc1 = 32'd0;
-    phase_acc2 = 32'd1431655765; //one third of the way
-    phase_acc3 = 32'd2863311530; //two thirds
-end
-
-always @ (posedge sample_clk) begin
-        phase_acc1 <= (phase_acc1 + PHASE_STEP); //ptr mask so it never exceeds that
-        phase_acc2 <= (phase_acc2 + PHASE_STEP);
-        phase_acc3 <= (phase_acc3 + PHASE_STEP);
-end
-
-//so now phase_acc can be used as inputs for sin!!!!
-//use lookup table here
-
-//delay_ptr calculator
-reg [11:0] delay1, delay2, delay3;
-
-//these lines generate what index were on (what theta)
-wire [7:0] lut_index1, lut_index2, lut_index3;
-assign lut_index1 = phase_acc1[31:24];
-assign lut_index2 = phase_acc2[31:24];
-assign lut_index3 = phase_acc3[31:24];
-
-//output of sin theta in floating point
-wire signed [15:0] sin1, sin2, sin3;
-assign signed [15:0] sin1 = LUT[lut_index1];
-assign signed [15:0] sin2 = LUT[lut_index2];
-assign signed [15:0] sin3 = LUT[lut_index3];
-
-//how deep
-localparam signed [15:0] depth = 192;
-
-
-always @ (posedge sample_clk) begin
-    delay1 <= 480 + ((sin1 * depth) >>> 15); //we multiply using floating pointmath then we divide back down to integer level (set this in the lut generator)
-    delay2 <= 480 + ((sin2 * depth) >>> 15); //we multiply using floating pointmath then we divide back down to integer level (set this in the lut generator)
-    delay3 <= 480 + ((sin3 * depth) >>> 15); //we multiply using floating pointmath then we divide back down to integer level (set this in the lut generator)
-end
-
-//now we know delay we must set the ptr to be behind the writer
-always @ (posedge sample_clk) begin
-    read_ptr1 <= (write_ptr - delay1) & 11'h7FF;
-    read_ptr2 <= (write_ptr - delay2) & 11'h7FF;
-    read_ptr3 <= (write_ptr - delay3) & 11'h7FF;
-end
-
-
-/***********************************************************************************************
-MIXING TIME!!!
-dry: 50
-v1, v2 ,v3 = 25 25 25 
-***********************************************************************************************/
-// combinational mixer
-wire signed [35:0] mix_acc =
-      (left_channel_audio_in        >>> 1)  // 0.5 * dry
-    + (delay_buffer[read_ptr1]      >>> 2)  // 0.25 * v1
-    + (delay_buffer[read_ptr2]      >>> 2)  // 0.25 * v2
-    + (delay_buffer[read_ptr3]      >>> 2); // 0.25 * v3
-
-reg signed [31:0] chorus_out;
-
-always @(posedge sample_clk or negedge resetn) begin
-    if (!resetn)
-        chorus_out <= 0;
-    else
-        chorus_out <= mix_acc[31:0];
-end
-
-assign left_channel_audio_out  = chorus_out;
-assign right_channel_audio_out = chorus_out;
-
-assign left_channel_audio_out = chorus_out;
-assign right_channel_audio_out = chorus_out;
-
-
-reg [15:0] LUT[0:255];
-
+reg [15:0] LUT [0:255];
 initial begin
 LUT[0] = 16'h0000;
 LUT[1] = 16'h0324;
@@ -389,5 +273,124 @@ LUT[252] = 16'hF374;
 LUT[253] = 16'hF696;
 LUT[254] = 16'hF9B8;
 end
+
+/**********************************************************************
+    specifications: 
+    10 ms, depth of 4 ms, lfo of 0.8hz, wet = 0.4
+
+    10ms delay = 480 samples (480 pointers behind)
+    4ms depth = 192 (this is how much it varies) 
+***********************************************************************/
+
+//circular buffer for 32 ms approx -> 32 bits * 32ms/48k
+reg [31:0] delay_buffer[0:2047]; //0.42 ms of samples //11 bit requirement
+reg [10:0] write_ptr;
+reg [10:0] read_ptr1, read_ptr2, read_ptr3; //+one voice
+
+/***********************************************************************************************
+Writing logic, the pointer iterates at 48k sync with aud then I will write to a certain address
+The address will loop back to 0, exactly like a circular buffer
+***********************************************************************************************/
+always @ (posedge sample_clk) begin
+    if(~resetn) begin
+        write_ptr <= 0;
+    end
+    else begin
+        delay_buffer[write_ptr] <= left_channel_audio_in; 
+        write_ptr <= (write_ptr+1) & 11'b11111111111; //pointer mask, basically always limited to the and of 1111111
+    end
+end
+/***********************************************************************************************
+Reading logic, will compare with the write ptr then subtract a certain index according to a 
+a low frequency oscillator like 
+***********************************************************************************************/
+
+/***********************************************************************************************
+LFO - LOW FREQUENCY OSCILLATOR WITH LUT FOR SIN
+***********************************************************************************************/
+parameter PHASE_STEP = 32'd74565;//calculated the right frequency
+reg [31:0] phase_acc1; //0 degree offest voice 1
+reg [31:0] phase_acc2; //120
+reg [31:0] phase_acc3; //240
+
+initial begin
+    phase_acc1 = 32'd0;
+    phase_acc2 = 32'd1431655765; //one third of the way
+    phase_acc3 = 32'd2863311530; //two thirds
+end
+
+always @ (posedge sample_clk) begin
+        phase_acc1 <= (phase_acc1 + PHASE_STEP); //ptr mask so it never exceeds that
+        phase_acc2 <= (phase_acc2 + PHASE_STEP);
+        phase_acc3 <= (phase_acc3 + PHASE_STEP);
+end
+
+//so now phase_acc can be used as inputs for sin!!!!
+//use lookup table here
+
+//delay_ptr calculator
+reg [11:0] delay1, delay2, delay3;
+
+//these lines generate what index were on (what theta)
+wire [7:0] lut_index1, lut_index2, lut_index3;
+assign lut_index1 = phase_acc1[31:24];
+assign lut_index2 = phase_acc2[31:24];
+assign lut_index3 = phase_acc3[31:24];
+
+//output of sin theta in floating point
+wire signed [15:0] sin1, sin2, sin3;
+assign sin1 = LUT[lut_index1];
+assign sin2 = LUT[lut_index2];
+assign sin3 = LUT[lut_index3];
+
+//how deep
+localparam signed [15:0] depth = 192;
+
+
+always @ (posedge sample_clk) begin
+    delay1 <= 480 + ((sin1 * depth) >>> 15); //we multiply using floating pointmath then we divide back down to integer level (set this in the lut generator)
+    delay2 <= 480 + ((sin2 * depth) >>> 15); //we multiply using floating pointmath then we divide back down to integer level (set this in the lut generator)
+    delay3 <= 480 + ((sin3 * depth) >>> 15); //we multiply using floating pointmath then we divide back down to integer level (set this in the lut generator)
+end
+
+//now we know delay we must set the ptr to be behind the writer
+always @ (posedge sample_clk) begin
+    read_ptr1 <= (write_ptr - delay1) & 11'h7FF;
+    read_ptr2 <= (write_ptr - delay2) & 11'h7FF;
+    read_ptr3 <= (write_ptr - delay3) & 11'h7FF;
+end
+
+
+/***********************************************************************************************
+MIXING TIME!!!
+dry: 50
+v1, v2 ,v3 = 25 25 25 
+***********************************************************************************************/
+// combinational mixer
+wire signed [35:0] mix_acc =
+      (left_channel_audio_in        >>> 1)  // 0.5 * dry
+    + (delay_buffer[read_ptr1]      >>> 2)  // 0.25 * v1
+    + (delay_buffer[read_ptr2]      >>> 2)  // 0.25 * v2
+    + (delay_buffer[read_ptr3]      >>> 2); // 0.25 * v3
+
+reg signed [31:0] chorus_out;
+
+always @(posedge sample_clk or negedge resetn) begin
+    if (!resetn)
+        chorus_out <= 0;
+    else
+        chorus_out <= mix_acc[31:0];
+end
+
+assign left_channel_audio_out  = chorus_out;
+assign right_channel_audio_out = chorus_out;
+
+assign left_channel_audio_out = chorus_out;
+assign right_channel_audio_out = chorus_out;
+
+
+
+
+
 
 endmodule
