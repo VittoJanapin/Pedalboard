@@ -43,24 +43,24 @@ module vga_adapter( resetn, clock, color, x, y, write,
                     VGA_R, VGA_G, VGA_B, VGA_HS, VGA_VS, VGA_BLANK_N, VGA_SYNC_N, VGA_CLK);
  
     // The VGA resolution, which can be set to "640x480", "320x240", and "160x120"
-    parameter RESOLUTION = "640x480";
+    parameter RESOLUTION = "160x120";
     /* The number of bits used to represent a pixel. An equal number of bits is allocated for 
      * the red (R), green (G) and blue (B) components. Thus, for COLOR_DEPTH = 3, there is one bit
      * for each of the R, G, B components, and eight different colors can be displayed. */
     parameter COLOR_DEPTH = 9;  // default
     
     // Number of VGA pixel X coordinate (column) and Y coordinate (row) bits
-    parameter nX = (RESOLUTION == "640x480") ? 10 : ((RESOLUTION == "320x240") ? 9 : 8);
-    parameter nY = (RESOLUTION == "640x480") ? 9 : ((RESOLUTION == "320x240") ? 8 : 7);
+    parameter nX =8;
+    parameter nY =7;
 
     // Number of address bits on the video memory
-    parameter Mn = (RESOLUTION == "640x480") ? 19 : ((RESOLUTION == "320x240") ? 17 : 15);
+    parameter Mn = 15;
 
     // Number of columns and rows in the video memory
-    parameter COLS = (RESOLUTION == "640x480") ? 640 : ((RESOLUTION == "320x240") ? 320 : 160);
-    parameter ROWS = (RESOLUTION == "640x480") ? 480 : ((RESOLUTION == "320x240") ? 240 : 120);
+    parameter COLS = 160;
+    parameter ROWS = 120;
 
-    parameter BACKGROUND_IMAGE = "./rainbow_640_9.mif";
+    parameter BACKGROUND_IMAGE = "../MIFs/background.mif";
     /* The initial screen displayed when the circuit is first programmed onto the DE1-SoC board 
      * can be defined using a MIF file. The file contains the initial color for each pixel on the
      * screen and is placed in the video memory when the FPGA is programmed. Note that resetting

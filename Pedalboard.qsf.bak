@@ -37,7 +37,7 @@
 
 
 set_global_assignment -name FAMILY "Cyclone V"
-set_global_assignment -name DEVICE 5CGXFC7C7F23C8
+set_global_assignment -name DEVICE 5CSEMA5F31C6
 set_global_assignment -name TOP_LEVEL_ENTITY Pedalboard
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 18.0.0
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "11:32:06  NOVEMBER 19, 2025"
@@ -49,17 +49,6 @@ set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
 set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
 set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
 set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
-set_global_assignment -name VERILOG_FILE avconf/I2C_Controller.v
-set_global_assignment -name VERILOG_FILE avconf/avconf.v
-set_global_assignment -name VERILOG_FILE Audio_Controller/Audio_Controller.v
-set_global_assignment -name VERILOG_FILE Audio_Controller/Audio_Clock.v
-set_global_assignment -name VERILOG_FILE Audio_Controller/Altera_UP_SYNC_FIFO.v
-set_global_assignment -name VERILOG_FILE Audio_Controller/Altera_UP_Clock_Edge.v
-set_global_assignment -name VERILOG_FILE Audio_Controller/Altera_UP_Audio_Out_Serializer.v
-set_global_assignment -name VERILOG_FILE Audio_Controller/Altera_UP_Audio_In_Deserializer.v
-set_global_assignment -name VERILOG_FILE Audio_Controller/Altera_UP_Audio_Bit_Counter.v
-set_global_assignment -name VERILOG_FILE Project.v
-set_global_assignment -name VERILOG_FILE Pedalboard.v
 set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
 set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
 set_location_assignment PIN_AJ4 -to ADC_CS_N
@@ -320,4 +309,21 @@ set_location_assignment PIN_E12 -to VGA_R[6]
 set_location_assignment PIN_F13 -to VGA_R[7]
 set_location_assignment PIN_C10 -to VGA_SYNC_N
 set_location_assignment PIN_D11 -to VGA_VS
+set_global_assignment -name VERILOG_FILE VGA_Modules/vga_pll.v
+set_global_assignment -name VERILOG_FILE VGA_Modules/vga_controller.v
+set_global_assignment -name VERILOG_FILE VGA_Modules/vga_address_translator.v
+set_global_assignment -name VERILOG_FILE VGA_Modules/vga_adapter.v
+set_global_assignment -name VERILOG_FILE effects/BitCrusher.v
+set_global_assignment -name VERILOG_FILE effects/soft_distortion.v
+set_global_assignment -name VERILOG_FILE avconf/I2C_Controller.v
+set_global_assignment -name VERILOG_FILE avconf/avconf.v
+set_global_assignment -name VERILOG_FILE Audio_Controller/Audio_Controller.v
+set_global_assignment -name VERILOG_FILE Audio_Controller/Audio_Clock.v
+set_global_assignment -name VERILOG_FILE Audio_Controller/Altera_UP_SYNC_FIFO.v
+set_global_assignment -name VERILOG_FILE Audio_Controller/Altera_UP_Clock_Edge.v
+set_global_assignment -name VERILOG_FILE Audio_Controller/Altera_UP_Audio_Out_Serializer.v
+set_global_assignment -name VERILOG_FILE Audio_Controller/Altera_UP_Audio_In_Deserializer.v
+set_global_assignment -name VERILOG_FILE Audio_Controller/Altera_UP_Audio_Bit_Counter.v
+set_global_assignment -name VERILOG_FILE Project.v
+set_global_assignment -name VERILOG_FILE Pedalboard.v
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

@@ -1,16 +1,16 @@
-Fitter Status : Successful - Wed Nov 19 11:42:50 2025
+Fitter Status : Successful - Fri Nov 21 22:49:51 2025
 Quartus Prime Version : 18.0.0 Build 614 04/24/2018 SJ Standard Edition
 Revision Name : Pedalboard
 Top-level Entity Name : Pedalboard
 Family : Cyclone V
 Device : 5CSEMA5F31C6
 Timing Models : Final
-Logic utilization (in ALMs) : 372 / 32,070 ( 1 % )
-Total registers : 310
-Total pins : 27 / 457 ( 6 % )
+Logic utilization (in ALMs) : 375 / 32,070 ( 1 % )
+Total registers : 343
+Total pins : 62 / 457 ( 14 % )
 Total virtual pins : 0
-Total block memory bits : 16,384 / 4,065,280 ( < 1 % )
-Total RAM Blocks : 4 / 397 ( 1 % )
+Total block memory bits : 189,184 / 4,065,280 ( 5 % )
+Total RAM Blocks : 27 / 397 ( 7 % )
 Total DSP Blocks : 0 / 87 ( 0 % )
 Total HSSI RX PCSs : 0
 Total HSSI PMA RX Deserializers : 0

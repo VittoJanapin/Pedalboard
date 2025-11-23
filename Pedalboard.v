@@ -43,7 +43,7 @@ module Pedalboard (
 // Inputs
 input				CLOCK_50;
 input		[3:0]	KEY;
-input		[3:0]	SW;
+input		[9:0]	SW;
 output       [9:0]   LEDR;
 
 input				AUD_ADCDAT;
@@ -61,9 +61,9 @@ output				AUD_DACDAT;
 output				FPGA_I2C_SCLK;
 
 //Outputs for video
-output				VGA_R;
-output				VGA_G;
-output				VGA_B;
+output	[7:0]		VGA_R;
+output	[7:0]		VGA_G;
+output	[7:0]		VGA_B;
 output				VGA_HS;
 output				VGA_VS;
 output				VGA_BLANK_N;
@@ -99,11 +99,6 @@ Audio Controller Interfacing
 
 assign read_audio_in			= audio_in_available; //will set a flag for the audio module to read audio in if theres available signals
 assign write_audio_out			= audio_in_available & audio_out_allowed & SW[0]; //set flag to allow outputting
-
-
-
-assign left_channel_audio_out	= left_channel_audio_in;
-assign right_channel_audio_out	= right_channel_audio_in;
 
 /*******************************************************************************
 
@@ -171,7 +166,7 @@ defparam VGA.BACKGROUND_IMAGE = "./MIFs/background.mif";
 
 //there are only 4 things we can draw
 wire [3:0] enable;
-assign enable = SW[3:0];
+assign enable = SW[4:1];
 
 //next state logic
 reg [1:0] state, nextState;
@@ -193,12 +188,13 @@ always @ (posedge CLOCK_50)
 
 
 //outputs
-always @ (posedge CLOCK_50) begin
+always @ (*) begin
     case(state)
-        0: begin x <= 42; y <= 47; color <= enable[0] ? 3'h1C1 : 9'h100; write<=1; end
-        1: begin x <= 66; y <= 47; color <= enable[0] ? 3'h1C1 : 9'h100; write<=1; end
-        2: begin x <= 90; y <= 47; color <= enable[0] ? 3'h1C1 : 9'h100; write<=1; end
-        3: begin x <= 113; y <= 47; color <= enable[0] ? 3'h1C1 : 9'h100; write<=1; end
+        0: begin x = 8'd42; y = 7'd47; color = enable[0] ? 9'h1C1 : 9'h100; write=1; end
+        1: begin x = 8'd66; y = 7'd47; color = enable[0] ? 9'h1C1 : 9'h100; write=1; end
+        2: begin x = 8'd90; y = 7'd47; color = enable[0] ? 9'h1C1 : 9'h100; write=1; end
+        3: begin x = 8'd113; y = 7'd47; color = enable[0] ? 9'h1C1 : 9'h100; write=1; end
+        default: write = 0;
     endcase
 end
 
@@ -271,9 +267,40 @@ vga_adapter VGA (
         .VGA_CLK(VGA_CLK)
 );
 
+soft_distortion SD(
+    .CLOCK_50(CLOCK_50),
+    .enable(enable[0]),
+    .left_channel_audio_in(left_channel_audio_in),
+    .right_channel_audio_in(right_channel_audio_in),
+    .left_channel_audio_out(l_inBetweenOne),
+    .right_channel_audio_out(r_inBetweenOne)
+);
+wire [31:0] l_inBetweenOne, r_inBetweenOne;
+
+chorus CHR(
+    .CLOCK_50                  (CLOCK_50),
+    .sample_clk                (AUD_ADCLRCK),    
+    .resetn                    (KEY[0]),
+    .enable                    (enable[1]),
+    .left_channel_audio_in     (l_inBetweenOne),
+    .right_channel_audio_in    (r_inBetweenOne),
+    .left_channel_audio_out    (r_inBetweenTwo),
+    .right_channel_audio_out   (r_inBetweenTwo)
+)
+
+wire [31:0] l_inBetweentwo, r_inBetweenTwo;
 
 
 
+BitCrusher BC (
+	.clk(CLOCK_50),
+	.enable(enable[3]), //this decides order
+	.resetn(),
+	.r_audio_in(l_inBetweenTwo),
+	.l_audio_in(r_inBetweenTwo),
+	.r_audio_out(right_channel_audio_out),
+	.l_audio_out(left_channel_audio_out),
+);
 endmodule
 
 
